@@ -42,9 +42,10 @@ class Config:
 
     DEFAULT_RATE_LIMITS = ["100 per day", "10 per minute"]
 
-    # Specific settings for Dialog Orchestrator
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "your-api-key-here")
-    PERSONA_ENGINE_URL = os.environ.get("PERSONA_ENGINE_URL", "http://persona-engine-service:5001")
+    PERSONA_ENGINE_URL = os.environ.get(
+        "PERSONA_ENGINE_URL", "http://persona-engine-service:5001"
+    )
 
 
 class DevelopmentConfig(Config):
@@ -53,9 +54,9 @@ class DevelopmentConfig(Config):
 
     Inherits from Config and sets configuration settings specific to the development environment.
     """
+
     DEBUG = True
     LOG_LEVEL = "DEBUG"
-    # Additional settings for development can be added here if necessary.
 
 
 class ProductionConfig(Config):
@@ -64,9 +65,9 @@ class ProductionConfig(Config):
 
     Inherits from Config and sets configuration settings specific to the production environment.
     """
+
     DEBUG = False
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "WARNING")
-    # Additional production settings can be added here.
 
 
 class TestingConfig(Config):
@@ -75,6 +76,7 @@ class TestingConfig(Config):
 
     Inherits from Config and sets configuration settings specific to the testing environment.
     """
+
     TESTING = True
     DEBUG = True
     LOG_LEVEL = "DEBUG"

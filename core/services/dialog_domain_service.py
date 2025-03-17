@@ -11,8 +11,10 @@ in the entity models themselves, keeping the core domain logic focused and clean
 """
 
 from typing import Dict
+
 from adapters.loggers.logger_adapter import app_logger
-from core.interfaces.dialog_domain_service_interface import IDialogDomainService
+from core.interfaces.dialog_domain_service_interface import \
+    IDialogDomainService
 
 
 class DialogDomainService(IDialogDomainService):

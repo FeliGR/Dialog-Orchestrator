@@ -12,10 +12,11 @@ from abc import ABC, abstractmethod
 class ILogger(ABC):
     """
     Interface for logging implementations.
-    
+
     Classes implementing this interface must provide methods for
     debug, info, and error level logging.
     """
+
     @abstractmethod
     def debug(self, message: str, *args, **kwargs) -> None:
         """

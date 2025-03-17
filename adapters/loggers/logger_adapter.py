@@ -6,7 +6,6 @@ It preserves all the configuration and supports lazy formatting.
 """
 
 from config import Config
-
 from core.interfaces.logger_interface import ILogger
 from utils.logger import LoggerFactory
 
