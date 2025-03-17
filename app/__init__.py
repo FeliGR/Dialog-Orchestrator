@@ -16,7 +16,7 @@ from typing import Type
 from flask import Flask
 
 from adapters.clients.openai_gpt_client import OpenAIGPTClient
-from adapters.clients.persona_client import HttpPersonaClient
+from adapters.clients.persona_client import PersonaClient
 from adapters.controllers.dialog_controller import create_dialog_blueprint
 from adapters.loggers.logger_adapter import app_logger
 from app.extensions import register_extensions
@@ -77,7 +77,7 @@ class ApplicationFactory:
         Args:
             flask_app (Flask): The Flask application instance.
         """
-        persona_client = HttpPersonaClient()
+        persona_client = PersonaClient()
         gpt_client = OpenAIGPTClient()
 
         flask_app.generate_dialog_use_case = GenerateDialogUseCase(
