@@ -92,6 +92,8 @@ class DialogDomainService(IDialogDomainService):
         Returns:
             str: A formatted string explaining the trait and its communication implications.
         """
+        if isinstance(value, dict):
+            value = value.get("value", 0)
         level = "High" if value >= 4.0 else "Moderate" if value >= 2.5 else "Low"
         trait_guidance = {
             "extraversion": {

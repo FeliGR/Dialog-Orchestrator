@@ -61,15 +61,32 @@ class GenerateDialogUseCase(IGenerateDialogUseCase):
         if not user_text or not isinstance(user_text, str):
             app_logger.error("Invalid user_text provided: %r", user_text)
             raise ValueError("User text must be a non-empty string")
+
         app_logger.debug("Retrieving personality data for user: %s", user_id)
-        persona_data = self.persona_client.get_persona(user_id)
-        if not persona_data:
+        persona_response = self.persona_client.get_persona(user_id)
+        if not persona_response or persona_response.get("status") != "success":
             app_logger.error("No personality data found for user_id: %s", user_id)
             raise ValueError(f"No personality data found for user '{user_id}'")
 
+        persona_data = persona_response.get("data", {})
+        valid_traits = {
+            "agreeableness",
+            "conscientiousness",
+            "extraversion",
+            "neuroticism",
+            "openness",
+        }
+        filtered_persona = {k: v for k, v in persona_data.items() if k in valid_traits}
+
+        if not filtered_persona:
+            app_logger.error(
+                "No valid personality traits found for user_id: %s", user_id
+            )
+            raise ValueError(f"No valid personality traits found for user '{user_id}'")
+        app_logger.debug("Filtered personality data: %s", filtered_persona)
+
         app_logger.debug("Composing prompt for user_id: %s", user_id)
-        prompt = self.dialog_service.compose_prompt(persona_data, user_text)
-        app_logger.debug("Composed prompt: %s", prompt)
+        prompt = self.dialog_service.compose_prompt(filtered_persona, user_text)
 
         app_logger.debug("Calling GPT client to generate response")
         bot_response = self.gpt_client.generate_text(prompt)

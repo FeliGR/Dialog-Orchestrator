@@ -20,7 +20,7 @@ ENV DEBUG=False
 ENV LOG_LEVEL=INFO
 
 # Expose the application port
-EXPOSE 5001
+EXPOSE 5002
 
 # Run with gunicorn for production
-CMD ["gunicorn", "--bind", "0.0.0.0:5001", "--workers", "4", "--log-level", "info", "app:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5002", "--workers", "4", "--log-level", "info", "app:app"]

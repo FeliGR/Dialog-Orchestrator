@@ -42,7 +42,7 @@ class PersonaClient(IPersonaClient):
         Raises:
             Exception: If the HTTP request fails.
         """
-        url = f"{self.base_url}/api/persona/{user_id}"
+        url = f"{self.base_url}/api/personas/{user_id}"
         try:
             app_logger.debug("Requesting persona data from: %s", url)
             response = requests.get(url, timeout=5)  # Timeout set to 5 seconds

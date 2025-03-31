@@ -1,0 +1,11 @@
+Flask==2.3.3
+flask-cors==4.0.0
+flask-limiter==3.5.0
+gunicorn==21.2.0
+marshmallow==3.20.1
+requests==2.31.0
+langchain==0.1.0
+langchain-openai==0.0.5
+marshmallow==3.20.1
+openai==1.55.3
+requests==2.31.0

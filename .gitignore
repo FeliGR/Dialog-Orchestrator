@@ -46,7 +46,6 @@ logs/
 
 # Project specific
 data/
-persona.db
 
 # Unit tests / coverage reports
 htmlcov/

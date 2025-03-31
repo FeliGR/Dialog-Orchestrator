@@ -91,12 +91,12 @@ def validate_user_id(f: F) -> F:
     """
 
     @wraps(f)
-    def decorated_function(user_id: str, *args: Any, **kwargs: Any) -> ResponseType:
+    def decorated_function(*args, **kwargs) -> ResponseType:
+        user_id = kwargs.get("user_id", args[1] if len(args) > 1 else None)
         if not user_id or not isinstance(user_id, str):
             app_logger.error("Invalid user ID: %s", user_id)
             return ApiResponse.error("Invalid user ID", status_code=400)
-        return f(user_id, *args, **kwargs)
-
+        return f(*args, **kwargs)
     return cast(F, decorated_function)
 
 
@@ -170,7 +170,7 @@ def create_dialog_blueprint(generate_dialog_uc: IGenerateDialogUseCase) -> Bluep
     blueprint = Blueprint("dialog", __name__, url_prefix="/api/dialog")
     controller = DialogController(generate_dialog_uc)
 
-    @blueprint.route("/<user_id>", methods=["POST"])
+    @blueprint.route("/<string:user_id>", methods=["POST"])
     def generate_dialog(user_id: str):
         return controller.generate_dialog(user_id)
 
