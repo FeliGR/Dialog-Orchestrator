@@ -97,6 +97,7 @@ def validate_user_id(f: F) -> F:
             app_logger.error("Invalid user ID: %s", user_id)
             return ApiResponse.error("Invalid user ID", status_code=400)
         return f(*args, **kwargs)
+
     return cast(F, decorated_function)
 
 

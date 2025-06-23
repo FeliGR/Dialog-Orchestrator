@@ -20,8 +20,11 @@ from adapters.clients.persona_client import PersonaClient
 from adapters.controllers.dialog_controller import create_dialog_blueprint
 from adapters.loggers.logger_adapter import app_logger
 from app.extensions import register_extensions
-from app.handlers import (register_error_handlers, register_request_hooks,
-                          register_shutdown_handlers)
+from app.handlers import (
+    register_error_handlers,
+    register_request_hooks,
+    register_shutdown_handlers,
+)
 from app.routes import register_routes
 from config import Config, DevelopmentConfig, ProductionConfig, TestingConfig
 from usecases.generate_dialog_use_case import GenerateDialogUseCase

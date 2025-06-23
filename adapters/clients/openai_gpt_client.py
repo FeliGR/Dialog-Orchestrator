@@ -26,9 +26,7 @@ class OpenAIGPTClient(IOpenGPTClient):
         app_logger.info("OpenAIGPTClient initialized with API key from config.")
 
         self.llm = ChatOpenAI(
-            temperature=0.7,
-            model_name="gpt-4o",
-            api_key=self.api_key
+            temperature=0.7, model_name="gpt-4o", api_key=self.api_key
         )
 
         prompt_template = PromptTemplate(
