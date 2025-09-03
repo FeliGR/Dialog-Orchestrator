@@ -4,26 +4,27 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: dialog-orchestrator-service
-    restart: always
+    restart: unless-stopped
     ports:
       - "5002:5002"
+    environment:
+      PYTHONUNBUFFERED: "1"
+      LOG_LEVEL: "DEBUG"
+      OPENAI_API_KEY: 
+      PERSONA_ENGINE_URL: http://persona-engine-service:5001
+      FLASK_ENV: production
     networks:
       - persona_network
-    environment:
-      - PYTHONUNBUFFERED=1
-      - DEBUG=False
-      - LOG_LEVEL=DEBUG
-      - SECRET_KEY=${SECRET_KEY:-change-this-in-production}
-      - OPENAI_API_KEY=${OPENAI_API_KEY:-change-this-in-production}
-      - PERSONA_ENGINE_URL=http://persona-engine-service:5001
-      - FLASK_ENV=production
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:5002/health"]
+      test:
+        - CMD-SHELL
+        - wget -qO- http://localhost:5002/health >/dev/null 2>&1 || curl -fsS http://localhost:5002/health || exit 1
       interval: 30s
       timeout: 10s
-      retries: 3
-      start_period: 10s
+      retries: 5
+      start_period: 30s
 
 networks:
   persona_network:
     external: true
+    name: persona_network

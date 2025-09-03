@@ -32,15 +32,14 @@ class Config:
     TESTING = os.environ.get("TESTING", "False").lower() == "true"
     LOG_LEVEL = os.environ.get("LOG_LEVEL", "INFO")
 
-    API_RATE_LIMIT = int(os.environ.get("API_RATE_LIMIT", "100"))
-    SECRET_KEY = os.environ.get("SECRET_KEY", "development-key-change-in-production")
+    API_RATE_LIMIT = int(os.environ.get("API_RATE_LIMIT", "500"))
 
     VERSION = "0.1.0"
     HOST = os.environ.get("HOST", "0.0.0.0")
     PORT = int(os.environ.get("PORT", 5002))
     CORS_ORIGINS = os.environ.get("CORS_ORIGINS", "*")
 
-    DEFAULT_RATE_LIMITS = ["100 per day", "10 per minute"]
+    DEFAULT_RATE_LIMITS = ["1000 per day", "500 per minute"]
 
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "your-api-key-here")
     PERSONA_ENGINE_URL = os.environ.get(
