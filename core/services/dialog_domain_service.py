@@ -122,7 +122,6 @@ class DialogDomainService(IDialogDomainService):
         if isinstance(value, dict):
             value = value.get("value", 0)
 
-        
         if value >= 4.5:
             level = "Very High"
         elif value >= 3.5:
@@ -297,7 +296,6 @@ class DialogDomainService(IDialogDomainService):
         agreeableness = persona_data.get("agreeableness", 3)
         openness = persona_data.get("openness", 3)
 
-        
         if extraversion >= 4 and agreeableness >= 4:
             primary_style = "Warm Collaborative: Enthusiastic and inclusive, building connection while advancing conversation"
         elif extraversion >= 4 and openness >= 4:
@@ -335,7 +333,6 @@ class DialogDomainService(IDialogDomainService):
         """
         patterns = []
 
-        
         conscientiousness = persona_data.get("conscientiousness", 3)
         openness = persona_data.get("openness", 3)
         extraversion = persona_data.get("extraversion", 3)
@@ -397,7 +394,6 @@ class DialogDomainService(IDialogDomainService):
 
         emotional_patterns = []
 
-        
         if neuroticism >= 4:
             emotional_patterns.append(
                 "**Sensitivity**: High emotional awareness, acknowledges concerns and potential challenges"
@@ -411,7 +407,6 @@ class DialogDomainService(IDialogDomainService):
                 "**Sensitivity**: Balanced emotional awareness without excessive worry or dismissiveness"
             )
 
-        
         if agreeableness >= 4:
             emotional_patterns.append(
                 "**Empathy**: Strong validation of others' feelings and perspectives"
@@ -425,7 +420,6 @@ class DialogDomainService(IDialogDomainService):
                 "**Empathy**: Moderate acknowledgment of emotional aspects"
             )
 
-        
         if extraversion >= 4:
             emotional_patterns.append(
                 "**Expression**: Open sharing of enthusiasm, excitement, and positive emotions"
@@ -568,7 +562,6 @@ class DialogDomainService(IDialogDomainService):
         neuroticism = persona_data.get("neuroticism", 3)
         openness = persona_data.get("openness", 3)
 
-        
         if extraversion >= 4:
             behaviors.append(
                 "• Ask engaging follow-up questions that invite continued conversation"
@@ -577,7 +570,6 @@ class DialogDomainService(IDialogDomainService):
                 "• Use inclusive language that brings the user into the discussion"
             )
 
-        
         if agreeableness >= 4:
             behaviors.append(
                 "• Acknowledge and validate the user's perspective before adding your own"
@@ -586,7 +578,6 @@ class DialogDomainService(IDialogDomainService):
                 "• Use collaborative language ('we could', 'let's consider')"
             )
 
-        
         if conscientiousness >= 4:
             behaviors.append(
                 "• Provide specific, actionable steps or clear next actions"
@@ -595,7 +586,6 @@ class DialogDomainService(IDialogDomainService):
                 "• Reference timelines, sequences, or organizational frameworks"
             )
 
-        
         if neuroticism >= 4:
             behaviors.append(
                 "• Acknowledge potential concerns or challenges thoughtfully"
@@ -604,14 +594,12 @@ class DialogDomainService(IDialogDomainService):
                 "• Offer reassurance and emotional support when appropriate"
             )
 
-        
         if openness >= 4:
             behaviors.append("• Explore multiple perspectives or creative alternatives")
             behaviors.append(
                 "• Use analogies or metaphors to illustrate complex concepts"
             )
 
-        
         if extraversion <= 2:
             behaviors.append(
                 "• Focus on substantive content rather than social connection"
@@ -647,7 +635,6 @@ class DialogDomainService(IDialogDomainService):
         """
         adaptations = []
 
-        
         sorted_traits = sorted(persona_data.items(), key=lambda x: x[1], reverse=True)
         highest_trait, highest_value = sorted_traits[0]
 
@@ -688,7 +675,6 @@ class DialogDomainService(IDialogDomainService):
                     "• In complex topics: Explore nuances and multiple perspectives"
                 )
 
-        
         adaptations.append(
             "• Always remain true to your personality while being contextually appropriate"
         )
@@ -714,7 +700,7 @@ class DialogDomainService(IDialogDomainService):
         Returns:
             str: The comprehensive prompt designed to generate authentic, personality-consistent responses.
         """
-        
+
         persona_analysis = "\n".join(
             [
                 self._get_trait_guidance(trait, value)
@@ -722,7 +708,6 @@ class DialogDomainService(IDialogDomainService):
             ]
         )
 
-        
         communication_style = self._get_communication_style(persona_data)
         linguistic_patterns = self._get_linguistic_patterns(persona_data)
         emotional_expression = self._get_emotional_expression(persona_data)
@@ -732,7 +717,6 @@ class DialogDomainService(IDialogDomainService):
         specific_behaviors = self._get_specific_behaviors(persona_data)
         contextual_adaptations = self._get_contextual_adaptations(persona_data)
 
-        
         prompt = self.prompt_template.format(
             persona_analysis=persona_analysis,
             communication_style=communication_style,
