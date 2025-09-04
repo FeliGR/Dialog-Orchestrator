@@ -3,8 +3,11 @@ GPT Client Module
 
 This module implements the GPT client adapter that communicates with the OpenAI API
 using LangChain. It sends the composed prompt to the language model and returns the
-generated response as a BotResponse object.
+generated response with additional metadata for evaluation purposes.
 """
+
+import time
+from typing import Any, Dict, Optional
 
 from langchain.chains import LLMChain
 from langchain.prompts import PromptTemplate
@@ -25,8 +28,14 @@ class OpenAIGPTClient(IOpenGPTClient):
         self.api_key = Config.OPENAI_API_KEY
         app_logger.info("OpenAIGPTClient initialized with API key from config.")
 
+        # Default model and temperature
+        self.default_model = getattr(Config, "OPENAI_MODEL", "gpt-4o")
+        self.default_temperature = getattr(Config, "OPENAI_TEMPERATURE_DEFAULT", 0.7)
+
         self.llm = ChatOpenAI(
-            temperature=0.7, model_name="gpt-4o", api_key=self.api_key
+            temperature=self.default_temperature,
+            model_name=self.default_model,
+            api_key=self.api_key,
         )
 
         prompt_template = PromptTemplate(
@@ -59,4 +68,84 @@ class OpenAIGPTClient(IOpenGPTClient):
             app_logger.error(
                 "Error generating text from GPT API via LangChain: %s", str(e)
             )
+            raise
+
+    def complete(
+        self,
+        prompt: str,
+        model: Optional[str] = None,
+        temperature: Optional[float] = None,
+        seed: Optional[int] = None,
+        max_tokens: int = 512,
+        top_p: float = 1.0,
+    ) -> Dict[str, Any]:
+        """
+        Advanced completion method with configurable parameters for evaluation purposes.
+
+        Args:
+            prompt (str): The prompt to be sent to the language model.
+            model (Optional[str]): Model to use (if None, uses default).
+            temperature (Optional[float]): Temperature setting (if None, uses default).
+            seed (Optional[int]): Random seed for reproducible results (may not be supported).
+            max_tokens (int): Maximum tokens to generate.
+            top_p (float): Top-p sampling parameter.
+
+        Returns:
+            Dict[str, Any]: Response containing text, model info, and usage statistics.
+        """
+        try:
+            # Use provided parameters or defaults
+            actual_model = model or self.default_model
+            actual_temperature = (
+                temperature if temperature is not None else self.default_temperature
+            )
+
+            # Create a temporary LLM instance with custom parameters
+            custom_llm = ChatOpenAI(
+                temperature=actual_temperature,
+                model_name=actual_model,
+                api_key=self.api_key,
+                max_tokens=max_tokens,
+                top_p=top_p,
+                # Note: seed parameter may not be supported by all versions
+            )
+
+            custom_chain = LLMChain(
+                llm=custom_llm,
+                prompt=PromptTemplate(input_variables=["prompt"], template="{prompt}"),
+            )
+
+            app_logger.debug(
+                "Sending prompt to GPT API with custom parameters: model=%s, temp=%.2f, max_tokens=%d",
+                actual_model,
+                actual_temperature,
+                max_tokens,
+            )
+
+            start_time = time.time()
+            result = custom_chain.run(prompt=prompt)
+            end_time = time.time()
+
+            result_text = result.strip()
+
+            app_logger.info(
+                "Received response from GPT API successfully (%.2fs)",
+                end_time - start_time,
+            )
+
+            # Return structured response with metadata
+            # Note: LangChain may not provide usage statistics, so we approximate
+            return {
+                "text": result_text,
+                "model": actual_model,
+                "usage": {
+                    "prompt_tokens": len(prompt.split()) * 1.3,  # Rough approximation
+                    "completion_tokens": len(result_text.split())
+                    * 1.3,  # Rough approximation
+                },
+                "latency_ms": int((end_time - start_time) * 1000),
+            }
+
+        except Exception as e:
+            app_logger.error("Error in complete method: %s", str(e))
             raise

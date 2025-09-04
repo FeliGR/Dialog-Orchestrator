@@ -3,24 +3,38 @@ Generate Dialog Use Case Module
 
 This module implements the use case for generating a dialog response by retrieving personality data
 from the Persona Engine and combining it with the user's input message. The use case acts as an
-it bridges controllers and external services to compose prompts and invoke the LLM
-composition and LLM communication, while enforcing domain rules.
+orchestrator that bridges controllers and external services to compose prompts and invoke the LLM
+with support for evaluation modes and response parsing.
 """
 
+import re
+import time
+from typing import Any, Dict, Optional
+
 from adapters.loggers.logger_adapter import app_logger
+from config import Config
 from core.domain.dialog_model import BotResponse
+from core.eval.constants import (
+    DEFAULT_FORMAT_ID,
+    DEFAULT_STRICT_OUTPUT,
+    EVAL_TYPE_MPI_AE,
+    EVAL_TYPE_NONE,
+    MPI_AE_FORMAT,
+    MPI_AE_REGEX,
+)
 from core.interfaces.use_case_interfaces import IGenerateDialogUseCase
 from core.services.dialog_domain_service import DialogDomainService
 
 
 class GenerateDialogUseCase(IGenerateDialogUseCase):
     """
-    Use case implementation for generating dialog responses.
+    Use case implementation for generating dialog responses with evaluation support.
 
     This class implements the IGenerateDialogUseCase interface, providing the business logic to:
       1. Retrieve personality data using the persona client.
       2. Compose a prompt that integrates personality data with the user's input message.
-      3. Call the GPT client to generate a dialog response.
+      3. Call the GPT client to generate a dialog response with support for evaluation modes.
+      4. Parse and validate responses when in evaluation mode.
     """
 
     def __init__(self, persona_client, gpt_client):
@@ -55,13 +69,57 @@ class GenerateDialogUseCase(IGenerateDialogUseCase):
         Raises:
             ValueError: If inputs are invalid or personality data is not found.
         """
+        # For backward compatibility, create a simple payload
+        payload = {"text": user_text}
+        result = self.execute_with_eval(user_id, payload)
+        return BotResponse(text=result["response"])
+
+    def execute_with_eval(
+        self, user_id: str, payload: Dict[str, Any]
+    ) -> Dict[str, Any]:
+        """
+        Execute the use case with evaluation support.
+
+        Args:
+            user_id (str): The unique identifier for the user.
+            payload (Dict[str, Any]): Request payload containing text and optional eval configuration.
+
+        Returns:
+            Dict[str, Any]: Response containing the generated text, evaluation data, and metadata.
+
+        Raises:
+            ValueError: If inputs are invalid or personality data is not found.
+        """
+        # 1) Input validation
         if not user_id or not isinstance(user_id, str):
             app_logger.error("Invalid user_id provided: %r", user_id)
             raise ValueError("User ID must be a non-empty string")
-        if not user_text or not isinstance(user_text, str):
-            app_logger.error("Invalid user_text provided: %r", user_text)
-            raise ValueError("User text must be a non-empty string")
 
+        if (
+            "text" not in payload
+            or not isinstance(payload["text"], str)
+            or not payload["text"].strip()
+        ):
+            app_logger.error("Invalid text in payload: %r", payload.get("text"))
+            raise ValueError("Field 'text' is required and must be a non-empty string")
+
+        user_text = payload["text"].strip()
+
+        # Parse evaluation configuration
+        eval_cfg: Dict[str, Any] = payload.get("eval", {})
+        eval_type = (eval_cfg.get("type", EVAL_TYPE_NONE)).lower()
+        strict_output: bool = bool(eval_cfg.get("strict_output", DEFAULT_STRICT_OUTPUT))
+        seed: Optional[int] = eval_cfg.get("seed")
+        format_id: Optional[str] = eval_cfg.get("format_id", DEFAULT_FORMAT_ID)
+
+        app_logger.debug(
+            "Executing dialog generation: user_id=%s, eval_type=%s, strict=%s",
+            user_id,
+            eval_type,
+            strict_output,
+        )
+
+        # 2) Retrieve personality data
         app_logger.debug("Retrieving personality data for user: %s", user_id)
         persona_response = self.persona_client.get_persona(user_id)
         if not persona_response or persona_response.get("status") != "success":
@@ -85,10 +143,96 @@ class GenerateDialogUseCase(IGenerateDialogUseCase):
             raise ValueError(f"No valid personality traits found for user '{user_id}'")
         app_logger.debug("Filtered personality data: %s", filtered_persona)
 
-        app_logger.debug("Composing prompt for user_id: %s", user_id)
-        prompt = self.dialog_service.compose_prompt(filtered_persona, user_text)
+        # 3) Prepare prompt with/without evaluation format
+        evaluation_format = MPI_AE_FORMAT if eval_type == EVAL_TYPE_MPI_AE else ""
 
-        app_logger.debug("Calling GPT client to generate response")
-        bot_response = self.gpt_client.generate_text(prompt)
-        app_logger.info("Dialog generated successfully for user_id: %s", user_id)
-        return bot_response
+        app_logger.debug("Composing prompt for user_id: %s", user_id)
+        prompt = self.dialog_service.compose_prompt(
+            persona_data=filtered_persona,
+            user_text=user_text,
+            evaluation_format=evaluation_format,
+        )
+
+        # 4) Call LLM with appropriate parameters
+        t0 = time.time()
+
+        if hasattr(self.gpt_client, "complete"):
+            # Use the enhanced complete method if available
+            temperature = (
+                0.0
+                if eval_type == EVAL_TYPE_MPI_AE
+                else Config.OPENAI_TEMPERATURE_DEFAULT
+            )
+            max_tokens = 1 if eval_type == EVAL_TYPE_MPI_AE else 512
+
+            resp = self.gpt_client.complete(
+                prompt=prompt,
+                temperature=temperature,
+                seed=seed,
+                model=Config.OPENAI_MODEL,
+                max_tokens=max_tokens,
+            )
+            raw_output = resp["text"]
+            model_info = resp.get("model", Config.OPENAI_MODEL)
+            usage_info = resp.get("usage", {})
+        else:
+            # Fallback to original method
+            bot_response = self.gpt_client.generate_text(prompt)
+            raw_output = bot_response.text
+            model_info = Config.OPENAI_MODEL
+            usage_info = {}
+
+        latency_ms = int((time.time() - t0) * 1000)
+
+        # 5) Parse response if in evaluation mode
+        eval_block = None
+        final_response = raw_output
+
+        if eval_type == EVAL_TYPE_MPI_AE:
+            parsed_choice = None
+            if strict_output:
+                # Strict parsing: exact match only
+                m = re.match(MPI_AE_REGEX, raw_output)
+                parsed_choice = m.group(1) if m else "UNK"
+                final_response = parsed_choice
+            else:
+                # Lenient parsing: search for any letter A-E
+                m = re.search(r"\b([ABCDE])\b", raw_output.upper())
+                parsed_choice = m.group(1) if m else "UNK"
+                final_response = parsed_choice
+
+            eval_block = {
+                "type": EVAL_TYPE_MPI_AE,
+                "strict_output": strict_output,
+                "format_id": format_id,
+                "parsed_choice": parsed_choice,
+                "raw_output": raw_output,
+            }
+
+            app_logger.info(
+                "MPI-AE evaluation completed: user_id=%s, choice=%s, raw='%s'",
+                user_id,
+                parsed_choice,
+                raw_output[:50],
+            )
+
+        # 6) Build response
+        result = {
+            "response": final_response,
+            "eval": eval_block,
+            "meta": {
+                "model": model_info,
+                "latency_ms": latency_ms,
+                "prompt_tokens": usage_info.get("prompt_tokens"),
+                "completion_tokens": usage_info.get("completion_tokens"),
+            },
+        }
+
+        app_logger.info(
+            "Dialog generated successfully for user_id: %s (eval_type=%s, %dms)",
+            user_id,
+            eval_type,
+            latency_ms,
+        )
+
+        return result

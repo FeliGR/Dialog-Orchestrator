@@ -18,7 +18,12 @@ class IDialogDomainService(ABC):
     """
 
     @abstractmethod
-    def compose_prompt(self, persona_data: Dict[str, float], user_text: str) -> str:
+    def compose_prompt(
+        self,
+        persona_data: Dict[str, float],
+        user_text: str,
+        evaluation_format: str = "",
+    ) -> str:
         """
         Compose a prompt that integrates personality data with the user's input.
 
@@ -26,6 +31,7 @@ class IDialogDomainService(ABC):
             persona_data (Dict[str, float]): A dictionary containing personality traits,
                 for example: {"extraversion": 4.5, "agreeableness": 3.5, ...}.
             user_text (str): The text provided by the user.
+            evaluation_format (str): Optional evaluation format string for assessment mode.
 
         Returns:
             str: The composed prompt to be sent to the language model.

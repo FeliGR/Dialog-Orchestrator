@@ -1,0 +1,18 @@
+"""
+MPI Assessment Evaluation Template
+
+This template provides a structure for MPI-AE (Multi-dimensional Personality Inventory - Assessment Evaluation) questions.
+The format guides the AI to respond as if taking a personality assessment.
+"""
+
+# Template for MPI-AE questions
+Given a statement of you: "You {item}."
+Please choose from the following options to identify how accurately this statement describes you.
+Options:
+(A). Very Accurate
+(B). Moderately Accurate
+(C). Neither Accurate Nor Inaccurate
+(D). Moderately Inaccurate
+(E). Very Inaccurate
+
+Answer:

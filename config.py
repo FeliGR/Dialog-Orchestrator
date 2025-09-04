@@ -42,6 +42,17 @@ class Config:
     DEFAULT_RATE_LIMITS = ["1000 per day", "500 per minute"]
 
     OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "your-api-key-here")
+    OPENAI_MODEL = os.environ.get("OPENAI_MODEL", "gpt-4o")
+    OPENAI_TEMPERATURE_DEFAULT = float(
+        os.environ.get("OPENAI_TEMPERATURE_DEFAULT", "0.7")
+    )
+
+    # Evaluation settings
+    EVAL_DEFAULT_TYPE = os.environ.get("EVAL_DEFAULT_TYPE", "none")
+    EVAL_STRICT_OUTPUT_DEFAULT = (
+        os.environ.get("EVAL_STRICT_OUTPUT_DEFAULT", "true").lower() == "true"
+    )
+
     PERSONA_ENGINE_URL = os.environ.get(
         "PERSONA_ENGINE_URL", "http://persona-engine-service:5001"
     )

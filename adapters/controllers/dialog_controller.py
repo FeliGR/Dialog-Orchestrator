@@ -26,9 +26,11 @@ class DialogRequestSchema(Schema):
 
     Attributes:
         text (str): The user's input message.
+        eval (dict, optional): Evaluation configuration.
     """
 
     text = fields.String(required=True)
+    eval = fields.Dict(required=False, missing={})
 
 
 class ApiResponse:
@@ -125,7 +127,13 @@ class DialogController(IDialogController):
 
         Expects a JSON payload with the following structure:
             {
-                "text": "User's input message"
+                "text": "User's input message",
+                "eval": {  // Optional evaluation configuration
+                    "type": "mpi_ae",
+                    "strict_output": true,
+                    "seed": 42,
+                    "format_id": "MPI-120"
+                }
             }
 
         Args:
@@ -138,11 +146,29 @@ class DialogController(IDialogController):
             data = request.get_json() or {}
             schema = DialogRequestSchema()
             validated_data = schema.load(data)
-            user_text = validated_data["text"]
 
-            app_logger.debug("Executing dialog use case for user_id: %s", user_id)
-            bot_response = self.generate_dialog_uc.execute(user_id, user_text)
-            return ApiResponse.success({"response": bot_response.text}, status_code=200)
+            app_logger.debug("Processing dialog request for user_id: %s", user_id)
+
+            # Check if this is an evaluation request or regular dialog
+            eval_config = validated_data.get("eval", {})
+            is_evaluation = eval_config.get("type", "none").lower() != "none"
+
+            if is_evaluation and hasattr(self.generate_dialog_uc, "execute_with_eval"):
+                # Use evaluation-aware execution
+                app_logger.debug("Using evaluation mode for user_id: %s", user_id)
+                result = self.generate_dialog_uc.execute_with_eval(
+                    user_id, validated_data
+                )
+                return ApiResponse.success(result, status_code=200)
+            else:
+                # Use original execution method
+                user_text = validated_data["text"]
+                app_logger.debug("Using standard mode for user_id: %s", user_id)
+                bot_response = self.generate_dialog_uc.execute(user_id, user_text)
+                return ApiResponse.success(
+                    {"response": bot_response.text}, status_code=200
+                )
+
         except ValidationError as err:
             app_logger.error("Validation error: %s", err.messages)
             return ApiResponse.error(
