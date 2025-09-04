@@ -67,3 +67,11 @@ docker-compose.override.yml
 .mypy_cache/
 .pytest_cache/
 .ruff_cache/
+
+# Experimental results
+runs/
+experiments/quick-test/
+*.json
+*.md
+!README.md
+!experiments/README-EXPERIMENTS.md
