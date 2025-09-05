@@ -121,7 +121,11 @@ def generate_quick_report(json_file: Path):
         mae = comparison["overall_metrics"]["mean_absolute_error"]
         
         print(f"\nPersona Comparison:")
-        print(f"  Correlation: {corr:.3f}")
+        import math
+        if math.isnan(corr):
+            print(f"  Correlation: N/A (constant reference vector)")
+        else:
+            print(f"  Correlation: {corr:.3f}")
         print(f"  Mean Absolute Error: {mae:.3f}")
         
         print(f"\nDetailed report saved to: {report_file}")

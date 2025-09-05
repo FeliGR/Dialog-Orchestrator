@@ -133,8 +133,8 @@ class MPIResultsAggregator:
         
         self.aggregated = {
             "metadata": {
-                "user_id": data.get("user_id", ""),
-                "timestamp": data.get("timestamp", 0),
+                "user_id": data.get("metadata", {}).get("user_id", ""),
+                "timestamp": data.get("metadata", {}).get("timestamp", 0),
                 "total_items": total_items,
                 "valid_items": valid_items,
                 "unk_items": len(unk_items),
@@ -261,9 +261,14 @@ class MPIResultsAggregator:
         sum_xy = sum(xi * yi for xi, yi in zip(x, y))
         
         numerator = n * sum_xy - sum_x * sum_y
-        denominator = math.sqrt((n * sum_x_sq - sum_x**2) * (n * sum_y_sq - sum_y**2))
+        denominator_sq = (n * sum_x_sq - sum_x**2) * (n * sum_y_sq - sum_y**2)
         
-        return numerator / denominator if denominator != 0 else 0.0
+        # Handle constant vectors (zero variance)
+        if denominator_sq <= 0:
+            return float("nan")  # Correlation not defined for constant vectors
+            
+        denominator = math.sqrt(denominator_sq)
+        return numerator / denominator
     
     def generate_report(self, output_path: str, persona_data: Optional[Dict[str, float]] = None) -> str:
         """
@@ -325,7 +330,15 @@ class MPIResultsAggregator:
                     comp = comparison["trait_comparisons"][trait_code]
                     lines.append(f"| {trait_code} | {comp['persona_value']:.1f} | {comp['measured_value']:.2f} | {comp['error']:+.2f} | {comp['abs_error']:.2f} |")
             lines.append("")
-            lines.append(f"**Overall Correlation:** {comparison['overall_metrics']['correlation']:.3f}")
+            
+            # Handle correlation for constant vectors
+            corr = comparison['overall_metrics']['correlation']
+            if math.isnan(corr):
+                lines.append("**Overall Correlation:** N/A (constant reference vector)")
+                lines.append("*Note: Correlation cannot be calculated when the reference persona has identical values for all traits (zero variance).*")
+            else:
+                lines.append(f"**Overall Correlation:** {corr:.3f}")
+                
             lines.append(f"**Mean Absolute Error:** {comparison['overall_metrics']['mean_absolute_error']:.3f}")
             lines.append(f"**RMSE:** {comparison['overall_metrics']['root_mean_square_error']:.3f}")
             lines.append("")
