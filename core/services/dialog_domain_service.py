@@ -37,8 +37,8 @@ class DialogDomainService(IDialogDomainService):
 
     # Calibración/estabilidad para experimentos (nuevos)
     AVG_TARGET = 3.0
-    NEUTRAL_BAND = 0.30          # ±0.30 alrededor de 3.0
-    PRIMARY_MIN_DELTA = 0.80     # desviación mínima del rasgo primario respecto a 3.0
+    NEUTRAL_BAND = 0.30  # ±0.30 alrededor de 3.0
+    PRIMARY_MIN_DELTA = 0.80  # desviación mínima del rasgo primario respecto a 3.0
 
     TRAIT_ORDER = [
         "openness",
@@ -292,7 +292,9 @@ class DialogDomainService(IDialogDomainService):
         }
 
     # ======= NUEVO: Guardrails de sesgo/deseabilidad social =======
-    def _get_bias_guardrails(self, persona: Dict[str, float], is_assessment: bool) -> str:
+    def _get_bias_guardrails(
+        self, persona: Dict[str, float], is_assessment: bool
+    ) -> str:
         """
         Instrucciones para evitar deseabilidad social (A/C artificialmente altas),
         especialmente en perfiles ~neutrales.
@@ -301,17 +303,31 @@ class DialogDomainService(IDialogDomainService):
         mostly_neutral = sum(1 for d in deltas.values() if d <= 0.5) >= 4
 
         guardrails = []
-        guardrails.append("• Avoid social desirability bias: do not try to sound kinder, more disciplined, or morally superior than the profile warrants.")
-        guardrails.append("• When faced with antisocial or disorderly statements, avoid reflexive extreme condemnation; choose the option that realistically fits the persona, even if it is not flattering.")
-        guardrails.append("• Use tempered wording; avoid absolutes like 'never', 'always', 'totally unacceptable' unless the persona level clearly implies it.")
-        guardrails.append("• For agreeableness around average: show empathy sometimes, impatience other times; set boundaries without over-validating.")
-        guardrails.append("• For conscientiousness around average: be reasonably organized but admit everyday lapses (procrastination, minor forgetfulness).")
+        guardrails.append(
+            "• Avoid social desirability bias: do not try to sound kinder, more disciplined, or morally superior than the profile warrants."
+        )
+        guardrails.append(
+            "• When faced with antisocial or disorderly statements, avoid reflexive extreme condemnation; choose the option that realistically fits the persona, even if it is not flattering."
+        )
+        guardrails.append(
+            "• Use tempered wording; avoid absolutes like 'never', 'always', 'totally unacceptable' unless the persona level clearly implies it."
+        )
+        guardrails.append(
+            "• For agreeableness around average: show empathy sometimes, impatience other times; set boundaries without over-validating."
+        )
+        guardrails.append(
+            "• For conscientiousness around average: be reasonably organized but admit everyday lapses (procrastination, minor forgetfulness)."
+        )
 
         if is_assessment:
-            guardrails.append("• Assessment mode (A–E): pick the option that best matches the persona settings, not the socially desirable one. Do not systematically push toward 'Very Accurate/Inaccurate' on moral or orderliness items.")
+            guardrails.append(
+                "• Assessment mode (A–E): pick the option that best matches the persona settings, not the socially desirable one. Do not systematically push toward 'Very Accurate/Inaccurate' on moral or orderliness items."
+            )
 
         if mostly_neutral:
-            guardrails.append("• Overall neutral profile: keep most responses near the middle unless a specific trait is clearly high/low.")
+            guardrails.append(
+                "• Overall neutral profile: keep most responses near the middle unless a specific trait is clearly high/low."
+            )
 
         return "\n".join(guardrails)
 
@@ -328,11 +344,19 @@ class DialogDomainService(IDialogDomainService):
         lines = []
         if primary_delta >= self.PRIMARY_MIN_DELTA:
             # Rasgo primario claramente desviado de 3 (p.ej., extraversion en E_20/E_50)
-            lines.append(f"• Primary trait to express: **{primary}** (let it be salient).")
-            lines.append("• Keep all other traits within a narrow average band (≈ ±0.3 around 3.0); avoid spillover into agreeableness/conscientiousness unless explicitly specified.")
-            lines.append("• Do not inflate kindness or diligence unless they are the primary trait.")
+            lines.append(
+                f"• Primary trait to express: **{primary}** (let it be salient)."
+            )
+            lines.append(
+                "• Keep all other traits within a narrow average band (≈ ±0.3 around 3.0); avoid spillover into agreeableness/conscientiousness unless explicitly specified."
+            )
+            lines.append(
+                "• Do not inflate kindness or diligence unless they are the primary trait."
+            )
         else:
-            lines.append("• No single primary trait detected; treat all traits as approximately average and avoid extremes.")
+            lines.append(
+                "• No single primary trait detected; treat all traits as approximately average and avoid extremes."
+            )
 
         return "\n".join(lines)
 
@@ -832,7 +856,9 @@ class DialogDomainService(IDialogDomainService):
         contextual_adaptations = self._get_contextual_adaptations(normalized_persona)
 
         bias_guardrails = self._get_bias_guardrails(normalized_persona, is_assessment)
-        stability_constraints = self._get_trait_stability_constraints(normalized_persona)
+        stability_constraints = self._get_trait_stability_constraints(
+            normalized_persona
+        )
 
         prompt = self.prompt_template.format(
             persona_analysis=persona_analysis,
