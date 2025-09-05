@@ -110,8 +110,10 @@ class MPIHTTPRunner:
         
         print(f"Running MPI assessment with {len(items_to_process)} items...")
         print(f"Run ID: {run_id}")
-        print(f"API endpoint: {endpoint}")
+        print(f"API base URL: {self.base_url}")
+        print(f"User ID: {self.user_id}")
         print(f"Configuration: {config}")
+        print("")  # Add spacing
         
         # Track statistics
         stats = {
@@ -269,9 +271,11 @@ class MPIHTTPRunner:
             "total_tokens": sum(r["prompt_tokens"] + r["completion_tokens"] for r in results),
         }
         
+        print("")  # Add spacing before completion summary
         print(f"Completed assessment: {stats['successful']}/{stats['total_items']} items successful")
         print(f"Unknown responses: {stats['unknown']}, Retries: {stats['retried']}, Errors: {stats['errors']}")
         print(f"Total duration: {total_duration:.1f}s, Avg latency: {metadata['avg_latency_ms']:.0f}ms")
+        print("")  # Add spacing after completion summary
         
         return {
             "metadata": metadata,
@@ -295,6 +299,7 @@ class MPIHTTPRunner:
         
         print(f"Results saved to {output_file}")
         print(f"Summary: {successful}/{total_items} items completed successfully")
+        print("")  # Add spacing after save confirmation
 
 
 def main():
